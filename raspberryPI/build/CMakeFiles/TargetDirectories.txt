@@ -1,0 +1,7 @@
+/home/kkw/s3project/raspberryPI/build/CMakeFiles/uart_test.dir
+/home/kkw/s3project/raspberryPI/build/CMakeFiles/edit_cache.dir
+/home/kkw/s3project/raspberryPI/build/CMakeFiles/rebuild_cache.dir
+/home/kkw/s3project/raspberryPI/build/CMakeFiles/list_install_components.dir
+/home/kkw/s3project/raspberryPI/build/CMakeFiles/install.dir
+/home/kkw/s3project/raspberryPI/build/CMakeFiles/install/local.dir
+/home/kkw/s3project/raspberryPI/build/CMakeFiles/install/strip.dir

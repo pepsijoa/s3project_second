@@ -1,0 +1,17 @@
+{
+  "github.copilot.chat.codeGeneration.instructions": [
+    {
+      "file": "CLAUDE.md"
+    }
+  ],
+  "github.copilot.chat.reviewSelection.instructions": [
+    {
+      "file": "CLAUDE.md"
+    }
+  ],
+  "github.copilot.chat.testGeneration.instructions": [
+    {
+      "file": "CLAUDE.md"
+    }
+  ]
+}

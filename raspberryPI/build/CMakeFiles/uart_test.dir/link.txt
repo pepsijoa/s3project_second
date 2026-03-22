@@ -1,0 +1,1 @@
+/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/uart_test.dir/link.d CMakeFiles/uart_test.dir/src/main.cpp.o CMakeFiles/uart_test.dir/src/uart_manager.cpp.o CMakeFiles/uart_test.dir/src/protocol.cpp.o -o uart_test

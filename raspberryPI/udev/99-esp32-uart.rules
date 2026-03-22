@@ -1,0 +1,23 @@
+# /etc/udev/rules.d/99-esp32-uart.rules
+#
+# 목적: /dev/ttyAMA* 번호는 부팅마다 비결정적으로 바뀌므로,
+#       물리 주소(KERNELS) 기반으로 영구 심볼릭 링크를 생성한다.
+#
+# 적용 대상: Raspberry Pi 4 (BCM2711)
+#   UART2 → fe201400.serial → /dev/ttyESP_Node1
+#   UART3 → fe201600.serial → /dev/ttyESP_Node2
+#   UART4 → fe201800.serial → /dev/ttyESP_Node3
+#
+# Raspberry Pi 5 (RP1) 사용자는 아래 주소를 확인 후 수정:
+#   ls -la /sys/bus/platform/devices/ | grep serial
+#
+# 설치 방법: scripts/setup_uart.sh 실행 (sudo 필요)
+
+SUBSYSTEM=="tty", KERNELS=="fe201400.serial", \
+    SYMLINK+="ttyESP_Node1", MODE="0660", GROUP="dialout"
+
+SUBSYSTEM=="tty", KERNELS=="fe201600.serial", \
+    SYMLINK+="ttyESP_Node2", MODE="0660", GROUP="dialout"
+
+SUBSYSTEM=="tty", KERNELS=="fe201800.serial", \
+    SYMLINK+="ttyESP_Node3", MODE="0660", GROUP="dialout"
