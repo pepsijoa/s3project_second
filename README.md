@@ -116,8 +116,8 @@ s3project/
 | SCK | 18 |
 | MISO | 19 |
 | MOSI | 23 |
-| SS (CS) | 17 |
-| RST | 16 |
+| SS (CS) | 5 |
+| RST | 22 |
 | IRQ | 4 (선택) |
 | VCC | **3.3V** (5V 금지) |
 | GND | GND |
