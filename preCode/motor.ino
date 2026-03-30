@@ -53,7 +53,8 @@ enum UwbRangeMessageType {
   UWB_POLL_ACK = 1,
   UWB_RANGE = 2,
   UWB_RANGE_REPORT = 3,
-  UWB_RANGE_FAILED = 255
+  UWB_RANGE_FAILED = 255,
+  UWB_MODE_NOTIFY = 0xF1   // motor → 신호등: FSM 모드 전환 알림
 };
 
 // QoS 레벨
@@ -63,6 +64,7 @@ enum QoS {
   EXACTLY_ONCE = 2
 };
 
+uint8_t CAR_ID = 6;
 //DWM RECV/SEND 정보
 device_configuration_t DEFAULT_CONFIG = {
     false,
@@ -77,6 +79,8 @@ device_configuration_t DEFAULT_CONFIG = {
     PreambleLength::LEN_128, // 고속 모드에 맞는 짧은 프리앰블
     PreambleCode::CODE_3
 };
+
+
 
 // FSM: 제어 모드 정의
 enum ControlMode {
@@ -120,6 +124,8 @@ uint64_t timeRangeSent = 0;
 uint64_t timeRangeReceived = 0;
 bool rangingProtocolFailed = false;
 float lastComputedRangeMeters = -1.0;
+bool pendingModeNotify = false;   // loop()에서 MODE_NOTIFY 전송 트리거
+uint8_t pendingMode = 0;
 
 
 // ========== 함수 원형 선언 ==========
@@ -132,6 +138,7 @@ bool handleRangingFrame(uint8_t* data, int len);
 void sendPollAckFrame();
 void sendRangeReportFrame(float meters);
 void sendRangeFailedFrame();
+void sendModeNotifyFrame(uint8_t mode);
 
 // ==========================================
 // 4. 모터 제어 함수 (제공해주신 코드)
@@ -470,6 +477,7 @@ void sendRangeReportFrame(float meters) {
   rangeFrame[0] = UWB_RANGE_REPORT;
   float encodedDistance = meters * DISTANCE_OF_RADIO_INV;
   memcpy(rangeFrame + 1, &encodedDistance, sizeof(float));
+  rangeFrame[5] = CAR_ID;  // 차량 식별자 삽입
   DW1000Ng::setTransmitData(rangeFrame, UWB_RANGE_FRAME_LEN);
   DW1000Ng::startTransmit();
 
@@ -489,6 +497,28 @@ void sendRangeFailedFrame() {
     delay(1);
   }
   DW1000Ng::clearTransmitStatus();
+}
+
+// UWB로 신호등에 FSM 모드 전환 알림 전송
+// loop()에서 pendingModeNotify 플래그를 확인 후 호출 (processMessages 완료 후)
+void sendModeNotifyFrame(uint8_t mode) {
+  byte notifyFrame[UWB_RANGE_FRAME_LEN] = {0};
+  notifyFrame[0] = (byte)UWB_MODE_NOTIFY;
+  notifyFrame[1] = CAR_ID;
+  notifyFrame[2] = mode;
+  DW1000Ng::setTransmitData(notifyFrame, UWB_RANGE_FRAME_LEN);
+  DW1000Ng::startTransmit(TransmitMode::IMMEDIATE);
+  // millis 기반 타임아웃 (delay() 사용 금지 — CLAUDE.md §4)
+  const uint32_t deadline = millis() + 100;
+  while (!DW1000Ng::isTransmitDone()) {
+    if ((int32_t)(millis() - deadline) > 0) {
+      Serial.println("[UWB] MODE_NOTIFY 전송 타임아웃");
+      break;
+    }
+  }
+  DW1000Ng::clearTransmitStatus();
+  DW1000Ng::startReceive();
+  Serial.printf("[UWB] MODE_NOTIFY 전송: car=%u mode=%u\n", CAR_ID, mode);
 }
 
 bool parseMessage(uint8_t* data, int len) {
@@ -550,6 +580,9 @@ void handlePublish(uint16_t msgId, uint8_t qos, String topic, uint8_t* payload, 
         controlMode = HTTP_CONTROL;
         Serial.println("[FSM] Mode: HTTP_CONTROL (HTTP ENABLED)");
       }
+      // processMessages() 완료 후 loop()에서 UWB 알림 전송 (즉시 전송 금지)
+      pendingModeNotify = true;
+      pendingMode = (uint8_t)controlMode;
     }
   }
   else if (topic == "command/led") {
@@ -645,7 +678,7 @@ void setup() {
 
   DW1000Ng::applyConfiguration(DEFAULT_CONFIG);
   
-  DW1000Ng::setDeviceAddress(6); // 수신기 주소
+  DW1000Ng::setDeviceAddress(CAR_ID); // 수신기 주소
   DW1000Ng::setNetworkId(10);    // 네트워크 ID
 
   DW1000Ng::setAntennaDelay(16436);
@@ -691,6 +724,7 @@ void setup() {
   subscribe("command/motor");
   subscribe("command/led");
   subscribe("command/range_probe");
+  subscribe("status/ranging");
 
   // DWM 수신 시작 (최초 한 번만)
   DW1000Ng::startReceive();
@@ -702,7 +736,12 @@ void loop() {
 
   processMessages();
 
+  // processMessages() 완료 후 UWB MODE_NOTIFY 전송 (수신 버퍼 오염 방지)
+  if (pendingModeNotify) {
+    pendingModeNotify = false;
+    sendModeNotifyFrame(pendingMode);
+  }
+
   // 모터 속도 업데이트
   updateMotorSpeed(currentDirection);
-
 }

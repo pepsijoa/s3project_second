@@ -9,15 +9,15 @@
 // ── 노드별 설정 — 업로드 전에 반드시 노드에 맞게 수정 ──────────
 // Node1: NODE_ID=1 / Node2: NODE_ID=2 / Node3: NODE_ID=3
 #define NODE_ID      1
-#define UART_TX_PIN  25     // 라즈베리파이 RX 에 연결된 GPIO
-#define UART_RX_PIN  26     // 라즈베리파이 TX 에 연결된 GPIO
+#define UART_TX_PIN  17     // 라즈베리파이 RX 에 연결된 GPIO
+#define UART_RX_PIN  16     // 라즈베리파이 TX 에 연결된 GPIO
 #define UART_BAUD    115200
 
 #define UWB_PIN_SCK   18
 #define UWB_PIN_MISO  19
 #define UWB_PIN_MOSI  23
-#define UWB_PIN_SS    17
-#define UWB_PIN_RST   16
+#define UWB_PIN_SS    5
+#define UWB_PIN_RST   22
 #define UWB_PIN_IRQ   4
 
 #define UWB_FRAME_LEN 16
@@ -26,6 +26,7 @@
 #define UWB_RANGE 2
 #define UWB_RANGE_REPORT 3
 #define UWB_RANGE_FAILED 255
+#define UWB_MODE_NOTIFY  0xF1   // motor → node: FSM 모드 전환 알림 (16바이트 프레임)
 // ──────────────────────────────────────────────────────────────
 
 // ── UartComm 클래스 ───────────────────────────────────────────
@@ -66,8 +67,16 @@ private:
     void start_ranging(uint16_t seq);
     void send_poll();
     void send_range();
-    void report_range(uint16_t distance_cm, int16_t rssi_centi_dbm);
+    void report_range(uint8_t car_id, uint16_t distance_cm, int16_t rssi_centi_dbm);
     void fail_ranging(const char *reason);
     static uint16_t meters_to_cm(float meters);
+
+    // CMD_CTRL_FWD: Proto-B UWB 패킷 빌드 후 motor 로 전송
+    void send_ctrl_fwd(const uint8_t* topic, uint8_t topic_len,
+                       const uint8_t* payload, uint8_t payload_len);
+    // CRC-16 CCITT (poly=0x1021, init=0xFFFF) — motor.ino / sender.ino 와 동일
+    static uint16_t calc_crc16(const uint8_t* data, uint16_t len);
+
+    uint16_t _ctrlMsgId = 1;  // Proto-B 메시지 ID 카운터
 
 };

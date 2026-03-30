@@ -1,8 +1,13 @@
-// main.cpp — Raspberry Pi UART 통신 테스트 진입점
+// main.cpp — Raspberry Pi UART 통신 대화형 테스트
 //
 // 단일 스레드 epoll 루프 구조:
-//   epoll_wait → [timerfd 이벤트] 2초마다 PING × 3
-//              → [UART 수신 이벤트] PONG 파싱 후 콘솔 출력
+//   epoll_wait → [stdin 이벤트] 사용자 입력에 따라 PING / RANGE 전송
+//              → [UART 수신 이벤트] PONG / RANGE_REPORT 파싱 후 콘솔 출력
+//
+// 사용법:
+//   PING  — 모든 활성 노드에 PING 전송 (PONG 응답 확인)
+//   RANGE — 모든 활성 노드에 RANGE_REQUEST 전송 (거리 측정)
+//   quit  — 프로그램 종료
 //
 // CLAUDE.md §3 준수:
 //   - std::thread / pthread 없음
@@ -21,8 +26,8 @@
 #include <array>
 
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/epoll.h>
-#include <sys/timerfd.h>
 #include <time.h>
 
 // ── 전역 종료 플래그 ──────────────────────────────────────────────────────────
@@ -110,12 +115,13 @@ static void on_pong(int node_id, const uint8_t* payload, uint8_t len) {
                            |  static_cast<uint16_t>(payload[2]);
         const uint8_t  nid = payload[3];
         printf("[RX] PONG ← Node%d  |  NodeID=%u  SEQ=%u\n", node_id, nid, seq);
-    } else if (payload[0] == proto::CMD_RANGE_REPORT && len >= 6) {
+    } else if (payload[0] == proto::CMD_RANGE_REPORT && len >= 7) {
         const uint8_t reported_node = payload[1];
-        const uint16_t distance_cm = (static_cast<uint16_t>(payload[2]) << 8)
-                                   |  static_cast<uint16_t>(payload[3]);
+        const uint8_t car_id = payload[2];
+        const uint16_t distance_cm = (static_cast<uint16_t>(payload[3]) << 8)
+                                   |  static_cast<uint16_t>(payload[4]);
         const int16_t rssi_centi_dbm = static_cast<int16_t>(
-            (static_cast<uint16_t>(payload[4]) << 8) | static_cast<uint16_t>(payload[5])
+            (static_cast<uint16_t>(payload[5]) << 8) | static_cast<uint16_t>(payload[6])
         );
 
         if (reported_node < 1 || reported_node > 3) {
@@ -124,7 +130,7 @@ static void on_pong(int node_id, const uint8_t* payload, uint8_t len) {
         }
 
         if (distance_cm == 0xFFFFu) {
-            printf("[RX] RANGE_REPORT Node%u failed\n", reported_node);
+            printf("[RX] RANGE_REPORT Node%u car=%u failed\n", reported_node, car_id);
             g_ranges[reported_node].valid = false;
             return;
         }
@@ -134,9 +140,14 @@ static void on_pong(int node_id, const uint8_t* payload, uint8_t len) {
         g_ranges[reported_node].rssi_centi_dbm = rssi_centi_dbm;
         g_ranges[reported_node].updated_ms = g_now_ms;
 
-        printf("[RX] RANGE_REPORT Node%u  dist=%u cm  rssi=%.2f dBm\n",
-               reported_node, distance_cm, rssi_centi_dbm / 100.0);
+        printf("[RX] RANGE_REPORT Node%u  car=%u  dist=%u cm  rssi=%.2f dBm\n",
+               reported_node, car_id, distance_cm, rssi_centi_dbm / 100.0);
         try_print_position();
+    } else if (payload[0] == proto::CMD_MODE_NOTIFY && len >= 3) {
+        const uint8_t mode = payload[2];
+        const char* mode_str = (mode == 1) ? "MQTT_CONTROL (HTTP BLOCKED)"
+                                           : "HTTP_CONTROL (HTTP ENABLED)";
+        printf("[RX] MODE_NOTIFY ← Node%d  →  차량 FSM: %s\n", node_id, mode_str);
     } else {
         printf("[RX] Node%d: 알 수 없는 cmd=0x%02X len=%u\n", node_id, payload[0], len);
     }
@@ -178,6 +189,37 @@ static void send_range_request_all(UartManager& mgr,
     }
 }
 
+// CMD_CTRL_FWD 전송: RPi → 노드(UART) → motor(UWB Proto-B 릴레이)
+// payload 형식: [CMD_CTRL_FWD][topic_len][topic...][payload_len_hi][payload_len_lo][payload...]
+static void send_ctrl_fwd_all(UartManager& mgr, const int* active_nodes, int active_count,
+                               const char* topic, const char* payload_str) {
+    const size_t topic_len   = strlen(topic);
+    const size_t payload_len = strlen(payload_str);
+
+    if (topic_len > 63 || payload_len > 63) {
+        printf("[!] CMD_CTRL_FWD 내용이 너무 깁니다 (topic≤63, payload≤63)\n");
+        return;
+    }
+
+    // 페이로드 빌드: [CMD][topic_len][topic...][payloadLenHi][payloadLenLo][payload...]
+    uint8_t buf[132];
+    size_t pos = 0;
+    buf[pos++] = proto::CMD_CTRL_FWD;
+    buf[pos++] = (uint8_t)topic_len;
+    memcpy(buf + pos, topic, topic_len);       pos += topic_len;
+    buf[pos++] = (payload_len >> 8) & 0xFF;
+    buf[pos++] = payload_len & 0xFF;
+    memcpy(buf + pos, payload_str, payload_len); pos += payload_len;
+
+    for (int index = 0; index < active_count; index++) {
+        const int node = active_nodes[index];
+        if (mgr.send(node, buf, (uint8_t)pos)) {
+            printf("[TX] CMD_CTRL_FWD → Node%d  topic='%s'  payload='%s'\n",
+                   node, topic, payload_str);
+        }
+    }
+}
+
 // ── main ──────────────────────────────────────────────────────────────────────
 int main(int argc, char* argv[]) {
     signal(SIGINT,  on_signal);
@@ -213,34 +255,33 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // ── timerfd 생성 (2초 주기 PING) ─────────────────────────────────────────
-    int tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-    if (tfd < 0) {
-        perror("timerfd_create");
-        return 1;
+    // ── stdin 을 non-blocking + epoll 에 등록 ────────────────────────────────
+    const int stdin_fd = STDIN_FILENO;
+    {
+        int flags = fcntl(stdin_fd, F_GETFL, 0);
+        fcntl(stdin_fd, F_SETFL, flags | O_NONBLOCK);
     }
-    struct itimerspec ts{};
-    ts.it_value.tv_sec    = 1;  // 1초 후 첫 발화
-    ts.it_interval.tv_sec = 2;  // 이후 2초마다
-    if (timerfd_settime(tfd, 0, &ts, nullptr) < 0) {
-        perror("timerfd_settime");
-        return 1;
-    }
-
-    // timerfd 를 UartManager 의 epoll 인스턴스에 추가
     struct epoll_event ev{};
     ev.events  = EPOLLIN;
-    ev.data.fd = tfd;
-    if (epoll_ctl(mgr.epoll_fd(), EPOLL_CTL_ADD, tfd, &ev) < 0) {
-        perror("epoll_ctl timerfd");
+    ev.data.fd = stdin_fd;
+    if (epoll_ctl(mgr.epoll_fd(), EPOLL_CTL_ADD, stdin_fd, &ev) < 0) {
+        perror("epoll_ctl stdin");
         return 1;
     }
 
-    printf("=== UART PING 테스트 시작 (Ctrl+C 로 종료) ===\n");
+    printf("=== UART 대화형 테스트 (%d개 노드) ===\n", active_count);
+    printf("명령어: PING | RANGE | CMD <topic> <payload> | quit\n");
+    printf("  예) CMD command/controlled 1\n");
+    printf("      CMD command/motor 50.0\n");
+    printf("      CMD command/led 1\n");
+    printf("> ");
+    fflush(stdout);
 
     // ── 단일 스레드 epoll 이벤트 루프 ────────────────────────────────────────
     uint16_t ping_seq = 0;
     uint16_t range_seq = 0;
+    char stdin_buf[256];
+    int stdin_buf_pos = 0;
     struct epoll_event events[8];
 
     while (g_running) {
@@ -254,17 +295,50 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < nfds; i++) {
             const int fd = events[i].data.fd;
 
-            if (fd == tfd) {
-                // timerfd 소비 (읽지 않으면 계속 EPOLLIN 발생)
-                uint64_t expirations;
-                if (read(tfd, &expirations, sizeof(expirations)) > 0) {
-                    struct timespec ts_now{};
-                    clock_gettime(CLOCK_MONOTONIC, &ts_now);
-                    g_now_ms = static_cast<uint64_t>(ts_now.tv_sec) * 1000ULL
-                             + static_cast<uint64_t>(ts_now.tv_nsec / 1000000ULL);
+            if (fd == stdin_fd) {
+                // stdin 에서 한 줄 읽기
+                char ch;
+                while (read(stdin_fd, &ch, 1) == 1) {
+                    if (ch == '\n') {
+                        stdin_buf[stdin_buf_pos] = '\0';
 
-                    send_ping_all(mgr, active_nodes, active_count, &ping_seq);
-                    send_range_request_all(mgr, active_nodes, active_count, &range_seq);
+                        // 타임스탬프 갱신
+                        struct timespec ts_now{};
+                        clock_gettime(CLOCK_MONOTONIC, &ts_now);
+                        g_now_ms = static_cast<uint64_t>(ts_now.tv_sec) * 1000ULL
+                                 + static_cast<uint64_t>(ts_now.tv_nsec / 1000000ULL);
+
+                        // 명령 파싱 (대소문자 무관)
+                        if (strcasecmp(stdin_buf, "PING") == 0) {
+                            send_ping_all(mgr, active_nodes, active_count, &ping_seq);
+                        } else if (strcasecmp(stdin_buf, "RANGE") == 0) {
+                            send_range_request_all(mgr, active_nodes, active_count, &range_seq);
+                        } else if (strcasecmp(stdin_buf, "quit") == 0 ||
+                                   strcasecmp(stdin_buf, "exit") == 0) {
+                            g_running = 0;
+                        } else if (strncasecmp(stdin_buf, "CMD ", 4) == 0) {
+                            // CMD <topic> <payload>
+                            char* rest = stdin_buf + 4;
+                            char* sp   = strchr(rest, ' ');
+                            if (!sp) {
+                                printf("[!] 형식: CMD <topic> <payload>  예) CMD command/controlled 1\n");
+                            } else {
+                                *sp = '\0';
+                                send_ctrl_fwd_all(mgr, active_nodes, active_count,
+                                                  rest, sp + 1);
+                            }
+                        } else if (stdin_buf_pos > 0) {
+                            printf("[?] 알 수 없는 명령: '%s'  (PING / RANGE / CMD <topic> <payload> / quit)\n", stdin_buf);
+                        }
+
+                        stdin_buf_pos = 0;
+                        if (g_running) {
+                            printf("> ");
+                            fflush(stdout);
+                        }
+                    } else if (stdin_buf_pos < (int)sizeof(stdin_buf) - 1) {
+                        stdin_buf[stdin_buf_pos++] = ch;
+                    }
                 }
             } else {
                 // UART 수신 처리
@@ -278,7 +352,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    close(tfd);
     printf("\n=== 종료 ===\n");
     return 0;
 }

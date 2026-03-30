@@ -12,15 +12,27 @@ CMakeFiles/uart_test.dir/src/main.cpp.o: /home/kkw/s3project/raspberryPI/src/mai
   /usr/include/aarch64-linux-gnu/bits/environments.h \
   /usr/include/aarch64-linux-gnu/bits/epoll.h \
   /usr/include/aarch64-linux-gnu/bits/errno.h \
+  /usr/include/aarch64-linux-gnu/bits/fcntl-linux.h \
+  /usr/include/aarch64-linux-gnu/bits/fcntl.h \
   /usr/include/aarch64-linux-gnu/bits/floatn-common.h \
   /usr/include/aarch64-linux-gnu/bits/floatn.h \
+  /usr/include/aarch64-linux-gnu/bits/flt-eval-method.h \
+  /usr/include/aarch64-linux-gnu/bits/fp-fast.h \
+  /usr/include/aarch64-linux-gnu/bits/fp-logb.h \
   /usr/include/aarch64-linux-gnu/bits/getopt_core.h \
   /usr/include/aarch64-linux-gnu/bits/getopt_posix.h \
   /usr/include/aarch64-linux-gnu/bits/ioctl-types.h \
   /usr/include/aarch64-linux-gnu/bits/ioctls.h \
+  /usr/include/aarch64-linux-gnu/bits/iscanonical.h \
   /usr/include/aarch64-linux-gnu/bits/libc-header-start.h \
+  /usr/include/aarch64-linux-gnu/bits/libm-simd-decl-stubs.h \
   /usr/include/aarch64-linux-gnu/bits/locale.h \
   /usr/include/aarch64-linux-gnu/bits/long-double.h \
+  /usr/include/aarch64-linux-gnu/bits/math-vector.h \
+  /usr/include/aarch64-linux-gnu/bits/mathcalls-helper-functions.h \
+  /usr/include/aarch64-linux-gnu/bits/mathcalls-macros.h \
+  /usr/include/aarch64-linux-gnu/bits/mathcalls-narrow.h \
+  /usr/include/aarch64-linux-gnu/bits/mathcalls.h \
   /usr/include/aarch64-linux-gnu/bits/posix_opt.h \
   /usr/include/aarch64-linux-gnu/bits/procfs-extra.h \
   /usr/include/aarch64-linux-gnu/bits/procfs-id.h \
@@ -42,6 +54,7 @@ CMakeFiles/uart_test.dir/src/main.cpp.o: /home/kkw/s3project/raspberryPI/src/mai
   /usr/include/aarch64-linux-gnu/bits/sigstksz.h \
   /usr/include/aarch64-linux-gnu/bits/sigthread.h \
   /usr/include/aarch64-linux-gnu/bits/ss_flags.h \
+  /usr/include/aarch64-linux-gnu/bits/stat.h \
   /usr/include/aarch64-linux-gnu/bits/stdint-intn.h \
   /usr/include/aarch64-linux-gnu/bits/stdint-least.h \
   /usr/include/aarch64-linux-gnu/bits/stdint-uintn.h \
@@ -49,10 +62,10 @@ CMakeFiles/uart_test.dir/src/main.cpp.o: /home/kkw/s3project/raspberryPI/src/mai
   /usr/include/aarch64-linux-gnu/bits/stdlib-float.h \
   /usr/include/aarch64-linux-gnu/bits/struct_mutex.h \
   /usr/include/aarch64-linux-gnu/bits/struct_rwlock.h \
+  /usr/include/aarch64-linux-gnu/bits/struct_stat.h \
   /usr/include/aarch64-linux-gnu/bits/thread-shared-types.h \
   /usr/include/aarch64-linux-gnu/bits/time.h \
   /usr/include/aarch64-linux-gnu/bits/time64.h \
-  /usr/include/aarch64-linux-gnu/bits/timerfd.h \
   /usr/include/aarch64-linux-gnu/bits/timesize.h \
   /usr/include/aarch64-linux-gnu/bits/timex.h \
   /usr/include/aarch64-linux-gnu/bits/types.h \
@@ -77,6 +90,7 @@ CMakeFiles/uart_test.dir/src/main.cpp.o: /home/kkw/s3project/raspberryPI/src/mai
   /usr/include/aarch64-linux-gnu/bits/types/sigval_t.h \
   /usr/include/aarch64-linux-gnu/bits/types/stack_t.h \
   /usr/include/aarch64-linux-gnu/bits/types/struct_FILE.h \
+  /usr/include/aarch64-linux-gnu/bits/types/struct_iovec.h \
   /usr/include/aarch64-linux-gnu/bits/types/struct_itimerspec.h \
   /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h \
   /usr/include/aarch64-linux-gnu/bits/types/struct_timespec.h \
@@ -105,7 +119,6 @@ CMakeFiles/uart_test.dir/src/main.cpp.o: /home/kkw/s3project/raspberryPI/src/mai
   /usr/include/aarch64-linux-gnu/sys/procfs.h \
   /usr/include/aarch64-linux-gnu/sys/select.h \
   /usr/include/aarch64-linux-gnu/sys/time.h \
-  /usr/include/aarch64-linux-gnu/sys/timerfd.h \
   /usr/include/aarch64-linux-gnu/sys/ttydefaults.h \
   /usr/include/aarch64-linux-gnu/sys/types.h \
   /usr/include/aarch64-linux-gnu/sys/ucontext.h \
@@ -154,6 +167,7 @@ CMakeFiles/uart_test.dir/src/main.cpp.o: /home/kkw/s3project/raspberryPI/src/mai
   /usr/include/c++/14/bits/range_access.h \
   /usr/include/c++/14/bits/refwrap.h \
   /usr/include/c++/14/bits/requires_hosted.h \
+  /usr/include/c++/14/bits/specfun.h \
   /usr/include/c++/14/bits/std_abs.h \
   /usr/include/c++/14/bits/std_function.h \
   /usr/include/c++/14/bits/stl_algobase.h \
@@ -177,6 +191,7 @@ CMakeFiles/uart_test.dir/src/main.cpp.o: /home/kkw/s3project/raspberryPI/src/mai
   /usr/include/c++/14/cctype \
   /usr/include/c++/14/cerrno \
   /usr/include/c++/14/clocale \
+  /usr/include/c++/14/cmath \
   /usr/include/c++/14/compare \
   /usr/include/c++/14/concepts \
   /usr/include/c++/14/csignal \
@@ -196,10 +211,23 @@ CMakeFiles/uart_test.dir/src/main.cpp.o: /home/kkw/s3project/raspberryPI/src/mai
   /usr/include/c++/14/functional \
   /usr/include/c++/14/initializer_list \
   /usr/include/c++/14/iosfwd \
+  /usr/include/c++/14/limits \
   /usr/include/c++/14/new \
   /usr/include/c++/14/pstl/pstl_config.h \
   /usr/include/c++/14/string \
   /usr/include/c++/14/string_view \
+  /usr/include/c++/14/tr1/bessel_function.tcc \
+  /usr/include/c++/14/tr1/beta_function.tcc \
+  /usr/include/c++/14/tr1/ell_integral.tcc \
+  /usr/include/c++/14/tr1/exp_integral.tcc \
+  /usr/include/c++/14/tr1/gamma.tcc \
+  /usr/include/c++/14/tr1/hypergeometric.tcc \
+  /usr/include/c++/14/tr1/legendre_function.tcc \
+  /usr/include/c++/14/tr1/modified_bessel_func.tcc \
+  /usr/include/c++/14/tr1/poly_hermite.tcc \
+  /usr/include/c++/14/tr1/poly_laguerre.tcc \
+  /usr/include/c++/14/tr1/riemann_zeta.tcc \
+  /usr/include/c++/14/tr1/special_function_util.h \
   /usr/include/c++/14/tuple \
   /usr/include/c++/14/type_traits \
   /usr/include/c++/14/typeinfo \
@@ -208,15 +236,18 @@ CMakeFiles/uart_test.dir/src/main.cpp.o: /home/kkw/s3project/raspberryPI/src/mai
   /usr/include/ctype.h \
   /usr/include/endian.h \
   /usr/include/errno.h \
+  /usr/include/fcntl.h \
   /usr/include/features-time64.h \
   /usr/include/features.h \
   /usr/include/linux/close_range.h \
   /usr/include/linux/errno.h \
+  /usr/include/linux/falloc.h \
   /usr/include/linux/ioctl.h \
   /usr/include/linux/posix_types.h \
   /usr/include/linux/stddef.h \
   /usr/include/linux/types.h \
   /usr/include/locale.h \
+  /usr/include/math.h \
   /usr/include/signal.h \
   /usr/include/stdc-predef.h \
   /usr/include/stdint.h \
@@ -576,8 +607,6 @@ uart_test: /lib/aarch64-linux-gnu/libc.so.6 \
 
 /usr/lib/aarch64-linux-gnu/Scrt1.o:
 
-/usr/lib/aarch64-linux-gnu/libc_nonshared.a:
-
 CMakeFiles/uart_test.dir/src/protocol.cpp.o:
 
 CMakeFiles/uart_test.dir/src/main.cpp.o:
@@ -586,15 +615,35 @@ CMakeFiles/uart_test.dir/src/main.cpp.o:
 
 /lib/aarch64-linux-gnu/libc.so.6:
 
-/usr/include/c++/14/bits/alloc_traits.h:
+/usr/include/aarch64-linux-gnu/bits/termios.h:
 
-/usr/include/c++/14/array:
+/usr/include/aarch64-linux-gnu/bits/termios-tcflow.h:
 
-/usr/include/aarch64-linux-gnu/bits/unistd_ext.h:
+/usr/include/aarch64-linux-gnu/bits/termios-struct.h:
 
-/usr/include/asm-generic/posix_types.h:
+/usr/include/aarch64-linux-gnu/bits/termios-c_lflag.h:
 
-/usr/include/stdc-predef.h:
+/usr/include/aarch64-linux-gnu/bits/termios-c_cflag.h:
+
+/lib/aarch64-linux-gnu/libmvec.so.1:
+
+/usr/include/aarch64-linux-gnu/bits/termios-c_cc.h:
+
+/usr/include/aarch64-linux-gnu/bits/termios-baud.h:
+
+/usr/lib/linux/uapi/arm64/asm/sve_context.h:
+
+/usr/lib/linux/uapi/arm64/asm/posix_types.h:
+
+/usr/lib/linux/uapi/arm64/asm/sigcontext.h:
+
+/usr/lib/linux/uapi/arm64/asm/ioctls.h:
+
+/usr/lib/linux/uapi/arm64/asm/ioctl.h:
+
+/usr/lib/gcc/aarch64-linux-gnu/14/include/stddef.h:
+
+/usr/lib/gcc/aarch64-linux-gnu/14/include/stdarg.h:
 
 /usr/include/asm-generic/errno.h:
 
@@ -612,7 +661,7 @@ CMakeFiles/uart_test.dir/src/main.cpp.o:
 
 /usr/include/c++/14/unordered_map:
 
-/usr/include/aarch64-linux-gnu/sys/epoll.h:
+/usr/include/aarch64-linux-gnu/bits/mathcalls-macros.h:
 
 /usr/include/aarch64-linux-gnu/c++/14/bits/c++config.h:
 
@@ -632,23 +681,17 @@ CMakeFiles/uart_test.dir/src/main.cpp.o:
 
 /usr/include/aarch64-linux-gnu/bits/uintn-identity.h:
 
-/lib/aarch64-linux-gnu/libmvec.so.1:
-
-/usr/include/aarch64-linux-gnu/bits/termios-c_cc.h:
-
 /usr/include/aarch64-linux-gnu/bits/typesizes.h:
 
-/usr/lib/linux/uapi/arm64/asm/sve_context.h:
-
 /usr/include/aarch64-linux-gnu/bits/types/struct_tm.h:
+
+/usr/include/aarch64-linux-gnu/bits/iscanonical.h:
 
 /usr/include/fcntl.h:
 
 /usr/include/asm-generic/int-ll64.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/timer_t.h:
-
-/usr/include/aarch64-linux-gnu/bits/termios-baud.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/struct_timespec.h:
 
@@ -658,6 +701,14 @@ CMakeFiles/uart_test.dir/src/main.cpp.o:
 
 /usr/include/aarch64-linux-gnu/bits/stdint-uintn.h:
 
+/usr/include/termios.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct_iovec.h:
+
+/usr/lib/linux/uapi/arm64/asm/errno.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct_FILE.h:
+
 /usr/include/c++/14/bits/exception.h:
 
 /usr/include/c++/14/cctype:
@@ -666,23 +717,17 @@ CMakeFiles/uart_test.dir/src/main.cpp.o:
 
 /usr/include/aarch64-linux-gnu/bits/types/sigevent_t.h:
 
-/usr/include/aarch64-linux-gnu/bits/types/sig_atomic_t.h:
-
 /usr/include/aarch64-linux-gnu/bits/types/mbstate_t.h:
 
 /usr/include/c++/14/bits/hashtable_policy.h:
 
-/usr/include/c++/14/bits/char_traits.h:
-
-/usr/include/c++/14/bits/hash_bytes.h:
-
 /usr/include/asm-generic/errno-base.h:
+
+/usr/include/aarch64-linux-gnu/bits/wordsize.h:
 
 /usr/include/asm-generic/bitsperlong.h:
 
 /usr/include/asm-generic/types.h:
-
-/usr/include/aarch64-linux-gnu/bits/wordsize.h:
 
 /usr/include/c++/14/bits/stl_algobase.h:
 
@@ -702,73 +747,73 @@ CMakeFiles/uart_test.dir/src/main.cpp.o:
 
 /usr/include/aarch64-linux-gnu/bits/types/__mbstate_t.h:
 
-/usr/include/asm-generic/ioctls.h:
+/usr/include/aarch64-linux-gnu/bits/types/__fpos64_t.h:
 
-/usr/include/c++/14/bits/unordered_map.h:
-
-/usr/include/stdint.h:
-
-/usr/include/endian.h:
-
-/usr/include/aarch64-linux-gnu/bits/procfs-extra.h:
-
-/usr/include/aarch64-linux-gnu/bits/atomic_wide_counter.h:
-
-/usr/include/aarch64-linux-gnu/bits/select.h:
-
-/usr/include/aarch64-linux-gnu/bits/timesize.h:
-
-/usr/lib/aarch64-linux-gnu/crti.o:
-
-/usr/include/aarch64-linux-gnu/bits/getopt_core.h:
-
-/usr/include/c++/14/bits/localefwd.h:
-
-/usr/include/aarch64-linux-gnu/bits/procfs-id.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/__sigset_t.h:
-
-/usr/include/c++/14/bits/charconv.h:
-
-/usr/include/c++/14/cstring:
-
-/usr/include/c++/14/cwchar:
-
-/usr/include/aarch64-linux-gnu/bits/ioctl-types.h:
+/usr/include/aarch64-linux-gnu/bits/fcntl-linux.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/siginfo_t.h:
 
 /usr/include/aarch64-linux-gnu/sys/user.h:
 
+/usr/include/aarch64-linux-gnu/bits/ioctl-types.h:
+
 /usr/include/c++/14/ext/alloc_traits.h:
 
-/usr/include/aarch64-linux-gnu/bits/sigaction.h:
+/usr/include/aarch64-linux-gnu/bits/termios-c_iflag.h:
 
-/usr/include/c++/14/bits/refwrap.h:
+/usr/include/aarch64-linux-gnu/bits/fp-fast.h:
 
-/usr/lib/linux/uapi/arm64/asm/posix_types.h:
+/usr/include/aarch64-linux-gnu/bits/types/FILE.h:
 
-/usr/include/aarch64-linux-gnu/bits/types/sigset_t.h:
+/usr/include/aarch64-linux-gnu/bits/timex.h:
 
-/usr/include/aarch64-linux-gnu/bits/epoll.h:
+/usr/include/aarch64-linux-gnu/sys/ucontext.h:
 
-/usr/include/c++/14/cstddef:
+/usr/include/aarch64-linux-gnu/bits/types.h:
 
-/home/kkw/s3project/raspberryPI/src/main.cpp:
+/usr/include/aarch64-linux-gnu/bits/struct_mutex.h:
 
-/usr/include/c++/14/bits/invoke.h:
+/usr/include/aarch64-linux-gnu/bits/timesize.h:
 
-/usr/include/aarch64-linux-gnu/bits/errno.h:
+/usr/include/aarch64-linux-gnu/bits/select.h:
 
-/usr/include/aarch64-linux-gnu/bits/siginfo-consts-arch.h:
+/usr/include/aarch64-linux-gnu/bits/stdlib-float.h:
 
-/home/kkw/s3project/raspberryPI/src/uart_manager.h:
+/usr/include/aarch64-linux-gnu/bits/struct_stat.h:
+
+/usr/include/aarch64-linux-gnu/bits/mathcalls-helper-functions.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/time_t.h:
 
 /usr/include/c++/14/bits/stl_uninitialized.h:
 
-/usr/lib/gcc/aarch64-linux-gnu/14/include/stdarg.h:
+/usr/lib/aarch64-linux-gnu/crti.o:
+
+/usr/include/aarch64-linux-gnu/bits/getopt_core.h:
+
+/usr/include/asm-generic/ioctls.h:
+
+/usr/include/c++/14/bits/unordered_map.h:
+
+/usr/include/aarch64-linux-gnu/bits/floatn.h:
+
+/usr/lib/linux/uapi/arm64/asm/types.h:
+
+/usr/include/aarch64-linux-gnu/bits/fcntl.h:
+
+/usr/include/aarch64-linux-gnu/bits/posix_opt.h:
+
+/usr/include/c++/14/cmath:
+
+/usr/include/aarch64-linux-gnu/bits/stat.h:
+
+/usr/include/c++/14/ext/string_conversions.h:
+
+/home/kkw/s3project/raspberryPI/src/main.cpp:
+
+/usr/include/c++/14/bits/invoke.h:
+
+/usr/include/aarch64-linux-gnu/sys/epoll.h:
 
 /usr/include/aarch64-linux-gnu/c++/14/bits/c++locale.h:
 
@@ -780,9 +825,19 @@ CMakeFiles/uart_test.dir/src/main.cpp.o:
 
 /usr/include/c++/14/concepts:
 
+/usr/include/aarch64-linux-gnu/bits/siginfo-consts-arch.h:
+
 /usr/include/aarch64-linux-gnu/bits/types/struct_itimerspec.h:
 
 /usr/include/aarch64-linux-gnu/bits/confname.h:
+
+/usr/lib/linux/uapi/arm64/asm/bitsperlong.h:
+
+/usr/include/aarch64-linux-gnu/bits/byteswap.h:
+
+/usr/include/aarch64-linux-gnu/bits/unistd_ext.h:
+
+/usr/include/c++/14/array:
 
 /usr/include/aarch64-linux-gnu/gnu/stubs-lp64.h:
 
@@ -790,19 +845,25 @@ CMakeFiles/uart_test.dir/src/main.cpp.o:
 
 /usr/include/aarch64-linux-gnu/bits/sigevent-consts.h:
 
-/usr/include/aarch64-linux-gnu/bits/pthreadtypes.h:
-
-/usr/include/c++/14/csignal:
-
 /home/kkw/s3project/raspberryPI/src/protocol.h:
 
-/usr/include/c++/14/bits/basic_string.h:
+/usr/include/aarch64-linux-gnu/bits/termios-misc.h:
+
+/usr/include/aarch64-linux-gnu/sys/ttydefaults.h:
+
+/usr/include/aarch64-linux-gnu/bits/endianness.h:
 
 /usr/include/ctype.h:
 
-/usr/include/aarch64-linux-gnu/bits/floatn.h:
+/usr/include/aarch64-linux-gnu/bits/types/sigset_t.h:
 
-/usr/include/aarch64-linux-gnu/bits/timex.h:
+/usr/include/aarch64-linux-gnu/bits/epoll.h:
+
+/usr/include/c++/14/cstddef:
+
+/usr/include/aarch64-linux-gnu/bits/sigaction.h:
+
+/usr/include/c++/14/bits/refwrap.h:
 
 /home/kkw/s3project/raspberryPI/src/protocol.cpp:
 
@@ -810,13 +871,41 @@ CMakeFiles/uart_test.dir/src/main.cpp.o:
 
 /usr/include/aarch64-linux-gnu/bits/stdint-intn.h:
 
+/usr/include/aarch64-linux-gnu/bits/fp-logb.h:
+
 /usr/include/c++/14/bits/cpp_type_traits.h:
 
 /usr/include/aarch64-linux-gnu/bits/libc-header-start.h:
 
-/usr/include/aarch64-linux-gnu/gnu/stubs.h:
+/usr/include/aarch64-linux-gnu/bits/atomic_wide_counter.h:
 
-/usr/include/asm-generic/ioctl.h:
+/usr/include/aarch64-linux-gnu/bits/procfs-extra.h:
+
+/usr/include/stdint.h:
+
+/usr/include/endian.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/sig_atomic_t.h:
+
+/usr/include/aarch64-linux-gnu/bits/mathcalls-narrow.h:
+
+/usr/include/c++/14/backward/binders.h:
+
+/usr/include/aarch64-linux-gnu/bits/stdio_lim.h:
+
+/usr/include/c++/14/bits/uses_allocator_args.h:
+
+/home/kkw/s3project/raspberryPI/src/uart_manager.h:
+
+/usr/include/c++/14/bits/localefwd.h:
+
+/usr/include/aarch64-linux-gnu/bits/procfs-id.h:
+
+/usr/include/aarch64-linux-gnu/bits/pthreadtypes.h:
+
+/usr/include/c++/14/csignal:
+
+/usr/include/c++/14/bits/specfun.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/__sigval_t.h:
 
@@ -827,6 +916,14 @@ CMakeFiles/uart_test.dir/src/main.cpp.o:
 /usr/include/c++/14/cstdio:
 
 /usr/include/c++/14/bits/utility.h:
+
+/usr/include/aarch64-linux-gnu/sys/ioctl.h:
+
+/usr/include/aarch64-linux-gnu/bits/thread-shared-types.h:
+
+CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
+
+/usr/include/aarch64-linux-gnu/bits/types/sigval_t.h:
 
 /usr/include/c++/14/vector:
 
@@ -842,29 +939,19 @@ CMakeFiles/uart_test.dir/src/main.cpp.o:
 
 /usr/include/c++/14/bits/exception_defines.h:
 
+/usr/include/c++/14/tr1/legendre_function.tcc:
+
 /usr/include/aarch64-linux-gnu/bits/locale.h:
 
 /usr/include/aarch64-linux-gnu/bits/floatn-common.h:
-
-CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
-
-/usr/include/aarch64-linux-gnu/bits/types/sigval_t.h:
-
-/usr/include/aarch64-linux-gnu/sys/ioctl.h:
-
-/usr/include/aarch64-linux-gnu/bits/thread-shared-types.h:
-
-/usr/include/aarch64-linux-gnu/bits/fcntl.h:
-
-/usr/lib/linux/uapi/arm64/asm/types.h:
 
 /usr/include/aarch64-linux-gnu/bits/siginfo-consts.h:
 
 /usr/include/c++/14/type_traits:
 
-/usr/include/aarch64-linux-gnu/bits/byteswap.h:
+/usr/include/c++/14/clocale:
 
-/usr/lib/linux/uapi/arm64/asm/bitsperlong.h:
+/usr/include/aarch64-linux-gnu/bits/struct_rwlock.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/clockid_t.h:
 
@@ -874,43 +961,49 @@ CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
 
 /usr/include/features-time64.h:
 
-/usr/include/aarch64-linux-gnu/bits/types/__fpos64_t.h:
-
-/usr/include/aarch64-linux-gnu/bits/fcntl-linux.h:
-
-/usr/include/aarch64-linux-gnu/bits/posix_opt.h:
-
-/usr/include/aarch64-linux-gnu/bits/timerfd.h:
-
 /usr/include/aarch64-linux-gnu/bits/sigthread.h:
-
-/usr/include/c++/14/bit:
-
-/usr/include/aarch64-linux-gnu/bits/stdint-least.h:
-
-/usr/include/aarch64-linux-gnu/bits/stdio_lim.h:
-
-/usr/include/c++/14/bits/uses_allocator_args.h:
-
-/usr/include/aarch64-linux-gnu/bits/struct_mutex.h:
-
-/usr/include/aarch64-linux-gnu/bits/types.h:
-
-/usr/include/aarch64-linux-gnu/bits/stdlib-float.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/__fpos_t.h:
 
-/usr/include/c++/14/clocale:
+/usr/include/aarch64-linux-gnu/gnu/stubs.h:
 
-/usr/include/aarch64-linux-gnu/bits/struct_rwlock.h:
+/usr/include/aarch64-linux-gnu/bits/math-vector.h:
 
-/usr/include/c++/14/backward/binders.h:
+/usr/include/asm-generic/ioctl.h:
 
-/usr/include/aarch64-linux-gnu/sys/ucontext.h:
+/usr/include/asm-generic/posix_types.h:
+
+/usr/include/c++/14/tr1/bessel_function.tcc:
+
+/usr/include/stdc-predef.h:
+
+/usr/include/aarch64-linux-gnu/bits/stdint-least.h:
+
+/usr/include/c++/14/bit:
+
+/usr/include/c++/14/bits/alloc_traits.h:
+
+/usr/include/c++/14/bits/basic_string.h:
+
+/usr/include/c++/14/tr1/riemann_zeta.tcc:
+
+/usr/include/c++/14/bits/char_traits.h:
+
+/usr/include/c++/14/bits/hash_bytes.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/__sigset_t.h:
+
+/usr/include/c++/14/bits/charconv.h:
+
+/usr/include/c++/14/cstring:
+
+/usr/include/c++/14/cwchar:
 
 /usr/include/c++/14/bits/erase_if.h:
 
 /usr/include/c++/14/bits/functexcept.h:
+
+/usr/include/c++/14/limits:
 
 /usr/include/c++/14/bits/functional_hash.h:
 
@@ -918,19 +1011,17 @@ CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
 
 /usr/include/c++/14/bits/memory_resource.h:
 
-/usr/include/aarch64-linux-gnu/sys/ttydefaults.h:
-
-/usr/include/aarch64-linux-gnu/bits/endianness.h:
-
-/usr/include/aarch64-linux-gnu/bits/termios-misc.h:
-
 /usr/include/c++/14/bits/memoryfwd.h:
+
+/usr/include/c++/14/tr1/ell_integral.tcc:
 
 /usr/include/c++/14/bits/move.h:
 
 /usr/include/c++/14/bits/stl_pair.h:
 
 /usr/include/c++/14/bits/ostream_insert.h:
+
+/usr/include/c++/14/tr1/beta_function.tcc:
 
 /usr/include/aarch64-linux-gnu/bits/sigstack.h:
 
@@ -943,10 +1034,6 @@ CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
 /usr/include/aarch64-linux-gnu/bits/types/stack_t.h:
 
 /usr/include/c++/14/bits/requires_hosted.h:
-
-/usr/include/aarch64-linux-gnu/bits/time.h:
-
-/home/kkw/s3project/raspberryPI/src/uart_manager.cpp:
 
 /usr/include/c++/14/bits/std_abs.h:
 
@@ -964,9 +1051,13 @@ CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
 
 /usr/include/c++/14/bits/stl_bvector.h:
 
+/usr/include/aarch64-linux-gnu/bits/libm-simd-decl-stubs.h:
+
 /usr/include/c++/14/bits/basic_string.tcc:
 
 /usr/include/c++/14/bits/stl_vector.h:
+
+/usr/include/aarch64-linux-gnu/bits/mathcalls.h:
 
 /usr/include/c++/14/bits/stl_function.h:
 
@@ -979,8 +1070,6 @@ CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
 /usr/include/aarch64-linux-gnu/bits/procfs-prregset.h:
 
 /usr/include/c++/14/bits/string_view.tcc:
-
-/usr/include/aarch64-linux-gnu/bits/termios-c_cflag.h:
 
 /usr/include/c++/14/bits/stringfwd.h:
 
@@ -1004,6 +1093,8 @@ CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
 
 /usr/include/c++/14/debug/assertions.h:
 
+/usr/include/c++/14/tr1/hypergeometric.tcc:
+
 /usr/include/c++/14/debug/debug.h:
 
 /usr/include/errno.h:
@@ -1015,10 +1106,6 @@ CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
 /usr/include/c++/14/new:
 
 /usr/include/linux/stddef.h:
-
-/usr/include/c++/14/ext/string_conversions.h:
-
-/usr/include/aarch64-linux-gnu/bits/stat.h:
 
 /usr/include/c++/14/ext/type_traits.h:
 
@@ -1036,25 +1123,37 @@ CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
 
 /usr/include/c++/14/initializer_list:
 
-/usr/include/aarch64-linux-gnu/bits/types/struct_FILE.h:
-
-/usr/lib/linux/uapi/arm64/asm/errno.h:
-
-/usr/lib/linux/uapi/arm64/asm/sigcontext.h:
-
-/usr/lib/linux/uapi/arm64/asm/ioctls.h:
-
 /usr/include/c++/14/iosfwd:
 
 /usr/include/c++/14/string:
 
 /usr/include/c++/14/string_view:
 
-/usr/include/c++/14/tuple:
+/usr/include/aarch64-linux-gnu/bits/errno.h:
+
+/usr/include/c++/14/tr1/poly_laguerre.tcc:
+
+/usr/include/c++/14/tr1/exp_integral.tcc:
 
 /usr/include/c++/14/typeinfo:
 
+/usr/include/c++/14/tr1/gamma.tcc:
+
+/usr/include/c++/14/tr1/modified_bessel_func.tcc:
+
+/home/kkw/s3project/raspberryPI/src/uart_manager.cpp:
+
+/usr/include/aarch64-linux-gnu/bits/time.h:
+
+/usr/include/c++/14/tr1/poly_hermite.tcc:
+
+/usr/include/c++/14/tuple:
+
 /usr/include/linux/close_range.h:
+
+/usr/include/linux/falloc.h:
+
+/usr/include/c++/14/tr1/special_function_util.h:
 
 /usr/include/linux/ioctl.h:
 
@@ -1070,7 +1169,13 @@ CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
 
 /usr/include/aarch64-linux-gnu/bits/types/wint_t.h:
 
+/usr/include/aarch64-linux-gnu/bits/flt-eval-method.h:
+
 /usr/include/locale.h:
+
+/usr/lib/aarch64-linux-gnu/libc_nonshared.a:
+
+/usr/include/math.h:
 
 /usr/include/strings.h:
 
@@ -1087,29 +1192,3 @@ CMakeFiles/uart_test.dir/src/uart_manager.cpp.o:
 /usr/include/unistd.h:
 
 /usr/include/wchar.h:
-
-/usr/lib/gcc/aarch64-linux-gnu/14/include/stddef.h:
-
-/usr/lib/linux/uapi/arm64/asm/ioctl.h:
-
-/usr/include/aarch64-linux-gnu/bits/struct_stat.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/FILE.h:
-
-/usr/include/aarch64-linux-gnu/bits/termios-c_iflag.h:
-
-/usr/include/aarch64-linux-gnu/bits/termios-c_lflag.h:
-
-/usr/include/aarch64-linux-gnu/bits/termios-struct.h:
-
-/usr/include/aarch64-linux-gnu/bits/termios-tcflow.h:
-
-/usr/include/aarch64-linux-gnu/bits/termios.h:
-
-/usr/include/linux/falloc.h:
-
-/usr/include/aarch64-linux-gnu/sys/timerfd.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/struct_iovec.h:
-
-/usr/include/termios.h:

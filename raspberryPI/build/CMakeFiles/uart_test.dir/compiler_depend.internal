@@ -13,15 +13,27 @@ CMakeFiles/uart_test.dir/src/main.cpp.o
  /usr/include/aarch64-linux-gnu/bits/environments.h
  /usr/include/aarch64-linux-gnu/bits/epoll.h
  /usr/include/aarch64-linux-gnu/bits/errno.h
+ /usr/include/aarch64-linux-gnu/bits/fcntl-linux.h
+ /usr/include/aarch64-linux-gnu/bits/fcntl.h
  /usr/include/aarch64-linux-gnu/bits/floatn-common.h
  /usr/include/aarch64-linux-gnu/bits/floatn.h
+ /usr/include/aarch64-linux-gnu/bits/flt-eval-method.h
+ /usr/include/aarch64-linux-gnu/bits/fp-fast.h
+ /usr/include/aarch64-linux-gnu/bits/fp-logb.h
  /usr/include/aarch64-linux-gnu/bits/getopt_core.h
  /usr/include/aarch64-linux-gnu/bits/getopt_posix.h
  /usr/include/aarch64-linux-gnu/bits/ioctl-types.h
  /usr/include/aarch64-linux-gnu/bits/ioctls.h
+ /usr/include/aarch64-linux-gnu/bits/iscanonical.h
  /usr/include/aarch64-linux-gnu/bits/libc-header-start.h
+ /usr/include/aarch64-linux-gnu/bits/libm-simd-decl-stubs.h
  /usr/include/aarch64-linux-gnu/bits/locale.h
  /usr/include/aarch64-linux-gnu/bits/long-double.h
+ /usr/include/aarch64-linux-gnu/bits/math-vector.h
+ /usr/include/aarch64-linux-gnu/bits/mathcalls-helper-functions.h
+ /usr/include/aarch64-linux-gnu/bits/mathcalls-macros.h
+ /usr/include/aarch64-linux-gnu/bits/mathcalls-narrow.h
+ /usr/include/aarch64-linux-gnu/bits/mathcalls.h
  /usr/include/aarch64-linux-gnu/bits/posix_opt.h
  /usr/include/aarch64-linux-gnu/bits/procfs-extra.h
  /usr/include/aarch64-linux-gnu/bits/procfs-id.h
@@ -43,6 +55,7 @@ CMakeFiles/uart_test.dir/src/main.cpp.o
  /usr/include/aarch64-linux-gnu/bits/sigstksz.h
  /usr/include/aarch64-linux-gnu/bits/sigthread.h
  /usr/include/aarch64-linux-gnu/bits/ss_flags.h
+ /usr/include/aarch64-linux-gnu/bits/stat.h
  /usr/include/aarch64-linux-gnu/bits/stdint-intn.h
  /usr/include/aarch64-linux-gnu/bits/stdint-least.h
  /usr/include/aarch64-linux-gnu/bits/stdint-uintn.h
@@ -50,10 +63,10 @@ CMakeFiles/uart_test.dir/src/main.cpp.o
  /usr/include/aarch64-linux-gnu/bits/stdlib-float.h
  /usr/include/aarch64-linux-gnu/bits/struct_mutex.h
  /usr/include/aarch64-linux-gnu/bits/struct_rwlock.h
+ /usr/include/aarch64-linux-gnu/bits/struct_stat.h
  /usr/include/aarch64-linux-gnu/bits/thread-shared-types.h
  /usr/include/aarch64-linux-gnu/bits/time.h
  /usr/include/aarch64-linux-gnu/bits/time64.h
- /usr/include/aarch64-linux-gnu/bits/timerfd.h
  /usr/include/aarch64-linux-gnu/bits/timesize.h
  /usr/include/aarch64-linux-gnu/bits/timex.h
  /usr/include/aarch64-linux-gnu/bits/types.h
@@ -78,6 +91,7 @@ CMakeFiles/uart_test.dir/src/main.cpp.o
  /usr/include/aarch64-linux-gnu/bits/types/sigval_t.h
  /usr/include/aarch64-linux-gnu/bits/types/stack_t.h
  /usr/include/aarch64-linux-gnu/bits/types/struct_FILE.h
+ /usr/include/aarch64-linux-gnu/bits/types/struct_iovec.h
  /usr/include/aarch64-linux-gnu/bits/types/struct_itimerspec.h
  /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h
  /usr/include/aarch64-linux-gnu/bits/types/struct_timespec.h
@@ -106,7 +120,6 @@ CMakeFiles/uart_test.dir/src/main.cpp.o
  /usr/include/aarch64-linux-gnu/sys/procfs.h
  /usr/include/aarch64-linux-gnu/sys/select.h
  /usr/include/aarch64-linux-gnu/sys/time.h
- /usr/include/aarch64-linux-gnu/sys/timerfd.h
  /usr/include/aarch64-linux-gnu/sys/ttydefaults.h
  /usr/include/aarch64-linux-gnu/sys/types.h
  /usr/include/aarch64-linux-gnu/sys/ucontext.h
@@ -155,6 +168,7 @@ CMakeFiles/uart_test.dir/src/main.cpp.o
  /usr/include/c++/14/bits/range_access.h
  /usr/include/c++/14/bits/refwrap.h
  /usr/include/c++/14/bits/requires_hosted.h
+ /usr/include/c++/14/bits/specfun.h
  /usr/include/c++/14/bits/std_abs.h
  /usr/include/c++/14/bits/std_function.h
  /usr/include/c++/14/bits/stl_algobase.h
@@ -178,6 +192,7 @@ CMakeFiles/uart_test.dir/src/main.cpp.o
  /usr/include/c++/14/cctype
  /usr/include/c++/14/cerrno
  /usr/include/c++/14/clocale
+ /usr/include/c++/14/cmath
  /usr/include/c++/14/compare
  /usr/include/c++/14/concepts
  /usr/include/c++/14/csignal
@@ -197,10 +212,23 @@ CMakeFiles/uart_test.dir/src/main.cpp.o
  /usr/include/c++/14/functional
  /usr/include/c++/14/initializer_list
  /usr/include/c++/14/iosfwd
+ /usr/include/c++/14/limits
  /usr/include/c++/14/new
  /usr/include/c++/14/pstl/pstl_config.h
  /usr/include/c++/14/string
  /usr/include/c++/14/string_view
+ /usr/include/c++/14/tr1/bessel_function.tcc
+ /usr/include/c++/14/tr1/beta_function.tcc
+ /usr/include/c++/14/tr1/ell_integral.tcc
+ /usr/include/c++/14/tr1/exp_integral.tcc
+ /usr/include/c++/14/tr1/gamma.tcc
+ /usr/include/c++/14/tr1/hypergeometric.tcc
+ /usr/include/c++/14/tr1/legendre_function.tcc
+ /usr/include/c++/14/tr1/modified_bessel_func.tcc
+ /usr/include/c++/14/tr1/poly_hermite.tcc
+ /usr/include/c++/14/tr1/poly_laguerre.tcc
+ /usr/include/c++/14/tr1/riemann_zeta.tcc
+ /usr/include/c++/14/tr1/special_function_util.h
  /usr/include/c++/14/tuple
  /usr/include/c++/14/type_traits
  /usr/include/c++/14/typeinfo
@@ -209,15 +237,18 @@ CMakeFiles/uart_test.dir/src/main.cpp.o
  /usr/include/ctype.h
  /usr/include/endian.h
  /usr/include/errno.h
+ /usr/include/fcntl.h
  /usr/include/features-time64.h
  /usr/include/features.h
  /usr/include/linux/close_range.h
  /usr/include/linux/errno.h
+ /usr/include/linux/falloc.h
  /usr/include/linux/ioctl.h
  /usr/include/linux/posix_types.h
  /usr/include/linux/stddef.h
  /usr/include/linux/types.h
  /usr/include/locale.h
+ /usr/include/math.h
  /usr/include/signal.h
  /usr/include/stdc-predef.h
  /usr/include/stdint.h

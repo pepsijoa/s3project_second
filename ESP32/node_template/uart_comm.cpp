@@ -82,6 +82,28 @@ void UartComm::handle_packet(const uint8_t *payload, uint8_t len) {
                            |  (uint16_t)payload[2];
         start_ranging(seq);
 
+    } else if (payload[0] == CMD_CTRL_FWD && len >= 4) {
+        // payload: [CMD_CTRL_FWD][topic_len][topic...][payload_len_hi][payload_len_lo][payload...]
+        const uint8_t topic_len = payload[1];
+        if (len < 2u + topic_len + 2u) {
+            Serial.printf("[Node%d] CTRL_FWD 길이 오류\n", NODE_ID);
+            return;
+        }
+        const uint8_t* topic = payload + 2;
+        const uint16_t plen = ((uint16_t)payload[2 + topic_len] << 8)
+                            |  (uint16_t)payload[3 + topic_len];
+        if (len < 2u + topic_len + 2u + plen) {
+            Serial.printf("[Node%d] CTRL_FWD 페이로드 길이 오류\n", NODE_ID);
+            return;
+        }
+        const uint8_t* pdata = payload + 2 + topic_len + 2;
+
+        if (_rangeState != RangeState::IDLE) {
+            Serial.printf("[Node%d] CTRL_FWD 무시 - 레인징 진행 중\n", NODE_ID);
+            return;
+        }
+        send_ctrl_fwd(topic, topic_len, pdata, (uint8_t)plen);
+
     } else {
         Serial.printf("[Node%d] 알 수 없는 CMD=0x%02X len=%u\n",
                       NODE_ID, payload[0], len);
@@ -128,29 +150,31 @@ void UartComm::send_range() {
 }
 
 void UartComm::process_uwb() {
-    if (_rangeState == RangeState::IDLE) {
-        return;
-    }
-
-    if ((int32_t)(millis() - _rangeDeadlineMs) > 0) {
-        fail_ranging("timeout");
-        return;
-    }
-
-    if (DW1000Ng::isTransmitDone()) {
+    // ── 전송 완료 처리 (레인징 중만) ─────────────────
+    if (_rangeState != RangeState::IDLE && DW1000Ng::isTransmitDone()) {
         DW1000Ng::clearTransmitStatus();
         DW1000Ng::startReceive();
     }
 
+    // ── 레인징 타임아웃 ───────────────────────────
+    if (_rangeState != RangeState::IDLE &&
+        (int32_t)(millis() - _rangeDeadlineMs) > 0) {
+        fail_ranging("timeout");
+        return;
+    }
+
+    // ── 수신 완료 확인 ───────────────────────────────
     if (!DW1000Ng::isReceiveDone()) {
         return;
     }
 
-    int dataLen = DW1000Ng::getReceivedDataLength();
+    const int dataLen = DW1000Ng::getReceivedDataLength();
     if (dataLen != UWB_FRAME_LEN) {
         DW1000Ng::clearReceiveStatus();
         DW1000Ng::startReceive();
-        fail_ranging("invalid frame len");
+        if (_rangeState != RangeState::IDLE) {
+            fail_ranging("invalid frame len");
+        }
         return;
     }
 
@@ -158,6 +182,25 @@ void UartComm::process_uwb() {
     DW1000Ng::getReceivedData(frame, UWB_FRAME_LEN);
     const byte msgId = frame[0];
 
+    // ── IDLE: motor 알림 프레임 처리 ───────────────────
+    if (_rangeState == RangeState::IDLE) {
+        DW1000Ng::clearReceiveStatus();
+        DW1000Ng::startReceive();
+        if (msgId == UWB_MODE_NOTIFY) {
+            const uint8_t carId = frame[1];
+            const uint8_t mode  = frame[2];
+            uint8_t np[3];
+            np[0] = CMD_MODE_NOTIFY;
+            np[1] = (uint8_t)NODE_ID;
+            np[2] = mode;
+            send(np, sizeof(np));
+            Serial.printf("[Node%d] MODE_NOTIFY: car=%u mode=%u\n",
+                          NODE_ID, carId, mode);
+        }
+        return;
+    }
+
+    // ── WAIT_POLL_ACK ──────────────────────────────────
     if (_rangeState == RangeState::WAIT_POLL_ACK) {
         if (msgId != UWB_POLL_ACK) {
             DW1000Ng::clearReceiveStatus();
@@ -165,16 +208,17 @@ void UartComm::process_uwb() {
             fail_ranging("expected POLL_ACK");
             return;
         }
-
-        _timePollSent = DW1000Ng::getTransmitTimestamp();
+        // getReceiveTimestamp() 는 clearReceiveStatus() 전에 호출
+        _timePollSent        = DW1000Ng::getTransmitTimestamp();
         _timePollAckReceived = DW1000Ng::getReceiveTimestamp();
-        _rangeState = RangeState::WAIT_RANGE_REPORT;
-        _rangeDeadlineMs = millis() + 300;
+        _rangeState          = RangeState::WAIT_RANGE_REPORT;
+        _rangeDeadlineMs     = millis() + 300;
         DW1000Ng::clearReceiveStatus();
         send_range();
         return;
     }
 
+    // ── WAIT_RANGE_REPORT ──────────────────────────────
     if (_rangeState == RangeState::WAIT_RANGE_REPORT) {
         DW1000Ng::clearReceiveStatus();
         DW1000Ng::startReceive();
@@ -191,29 +235,31 @@ void UartComm::process_uwb() {
         float rawDistance = 0.0f;
         memcpy(&rawDistance, frame + 1, sizeof(float));
         const float distanceMeters = rawDistance / DISTANCE_OF_RADIO_INV;
-        const uint16_t distanceCm = meters_to_cm(distanceMeters);
+        const uint16_t distanceCm  = meters_to_cm(distanceMeters);
         const int16_t rssiCentiDbm = (int16_t)(DW1000Ng::getReceivePower() * 100.0f);
+        const uint8_t carId        = frame[5];
 
-        report_range(distanceCm, rssiCentiDbm);
+        report_range(carId, distanceCm, rssiCentiDbm);
         _rangeState = RangeState::IDLE;
-        Serial.printf("[Node%d] range done: %u cm, RSSI=%d cdbm\n",
-                      NODE_ID, distanceCm, (int)rssiCentiDbm);
+        Serial.printf("[Node%d] range done: car=%u, %u cm, RSSI=%d cdbm\n",
+                      NODE_ID, carId, distanceCm, (int)rssiCentiDbm);
     }
 }
 
-void UartComm::report_range(uint16_t distance_cm, int16_t rssi_centi_dbm) {
-    uint8_t payload[6];
+void UartComm::report_range(uint8_t car_id, uint16_t distance_cm, int16_t rssi_centi_dbm) {
+    uint8_t payload[7];
     payload[0] = CMD_RANGE_REPORT;
     payload[1] = (uint8_t)NODE_ID;
-    payload[2] = (distance_cm >> 8) & 0xFF;
-    payload[3] = distance_cm & 0xFF;
-    payload[4] = (rssi_centi_dbm >> 8) & 0xFF;
-    payload[5] = rssi_centi_dbm & 0xFF;
+    payload[2] = car_id;
+    payload[3] = (distance_cm >> 8) & 0xFF;
+    payload[4] = distance_cm & 0xFF;
+    payload[5] = (rssi_centi_dbm >> 8) & 0xFF;
+    payload[6] = rssi_centi_dbm & 0xFF;
     send(payload, sizeof(payload));
 }
 
 void UartComm::fail_ranging(const char *reason) {
-    report_range(0xFFFF, (int16_t)0x8000);
+    report_range(0x00, 0xFFFF, (int16_t)0x8000);
     _rangeState = RangeState::IDLE;
     DW1000Ng::forceTRxOff();
     DW1000Ng::startReceive();
@@ -229,6 +275,69 @@ uint16_t UartComm::meters_to_cm(float meters) {
         cm = 65534.0f;
     }
     return (uint16_t)(cm + 0.5f);
+}
+
+// ── CRC-16 CCITT (poly=0x1021, init=0xFFFF) ─────────────────
+// motor.ino / sender.ino 의 calculateCRC16() 와 동일한 알고리즘
+uint16_t UartComm::calc_crc16(const uint8_t* data, uint16_t len) {
+    uint16_t crc = 0xFFFF;
+    for (uint16_t i = 0; i < len; i++) {
+        crc ^= (uint16_t)data[i] << 8;
+        for (int j = 0; j < 8; j++) {
+            if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+            else              crc <<= 1;
+        }
+    }
+    return crc;
+}
+
+// ── CMD_CTRL_FWD: Proto-B UWB 프레임 빌드 후 차량으로 전송 ───
+// Proto-B 프레임 형식 (motor.ino / sender.ino 호환):
+//   [0x7E][PUBLISH=0x01][msgId_HI][msgId_LO][QoS=0x00]
+//   [topicLen][topic...][payloadLen_HI][payloadLen_LO][payload...]
+//   [CRC_HI][CRC_LO][0x7F]
+// QoS=0 (AT_MOST_ONCE): motor ACK 전송 없음 → 수신 버퍼 오염 방지
+void UartComm::send_ctrl_fwd(const uint8_t* topic, uint8_t topic_len,
+                              const uint8_t* payload, uint8_t payload_len) {
+    uint8_t buf[128];
+    int pos = 0;
+
+    buf[pos++] = 0x7E;                         // START_BYTE
+    buf[pos++] = 0x01;                         // PUBLISH
+    buf[pos++] = (_ctrlMsgId >> 8) & 0xFF;     // msgId HI  (빅 엔디안 직렬화)
+    buf[pos++] = _ctrlMsgId & 0xFF;            // msgId LO
+    _ctrlMsgId++;
+    buf[pos++] = 0x00;                         // QoS AT_MOST_ONCE
+    buf[pos++] = topic_len;
+    for (int i = 0; i < topic_len;   i++) buf[pos++] = topic[i];
+    buf[pos++] = (payload_len >> 8) & 0xFF;    // payloadLen HI
+    buf[pos++] = payload_len & 0xFF;           // payloadLen LO
+    for (int i = 0; i < payload_len; i++) buf[pos++] = payload[i];
+
+    // CRC-16: buf[1] 부터 현재 pos-1 까지 (START_BYTE 제외)
+    uint16_t crc = calc_crc16(buf + 1, (uint16_t)(pos - 1));
+    buf[pos++] = (crc >> 8) & 0xFF;
+    buf[pos++] = crc & 0xFF;
+    buf[pos++] = 0x7F;                         // END_BYTE
+
+    DW1000Ng::setTransmitData(buf, pos);
+    DW1000Ng::startTransmit(TransmitMode::IMMEDIATE);
+
+    // 전송 완료 대기 (millis 기반 타임아웃, delay() 없음)
+    const uint32_t deadline = millis() + 100;
+    while (!DW1000Ng::isTransmitDone()) {
+        if ((int32_t)(millis() - deadline) > 0) {
+            Serial.printf("[Node%d] CTRL_FWD 전송 타임아웃\n", NODE_ID);
+            break;
+        }
+    }
+    DW1000Ng::clearTransmitStatus();
+    DW1000Ng::startReceive();
+
+    Serial.printf("[Node%d] CTRL_FWD 전송: '%.*s' = '%.*s'\n",
+                  NODE_ID,
+                  (int)topic_len,   (const char*)topic,
+                  (int)payload_len, (const char*)payload);
 }
 
 // ── 송신 ─────────────────────────────────────────────────────
