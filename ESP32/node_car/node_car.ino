@@ -108,12 +108,15 @@ int    subscribedCount = 0;
 
 unsigned long lastMotorUpdate = 0;
 
+// (진단용) RANGE 대기 상태 추적
+static bool waitingForRange = false;
+
 // ── 함수 원형 선언 ────────────────────────────────────────────
 uint16_t calculateCRC16(uint8_t* data, int len);
 bool     parseMessage(uint8_t* data, int len);
 void     handlePublish(uint16_t msgId, uint8_t qos, String topic, uint8_t* payload, int len);
 void     sendAck(uint16_t msgId);
-bool     handleRangingFrame(uint8_t* data, int len);
+bool     handleRangingFrame(uint8_t* data, int len, uint64_t rxTimestamp);
 void     sendPollAckFrame();
 void     sendRangeReportFrame(float meters);
 void     sendRangeFailedFrame();
@@ -288,7 +291,7 @@ void publish(String topic, uint8_t* payload, int payloadLen) {
         }
     }
     DW1000Ng::clearTransmitStatus();
-    // startReceive()는 processMessages() 말미에서 호출
+    DW1000Ng::startReceive();  // publish TX 완료 후 RX 복귀
 }
 
 void publish(String topic, String payload) {
@@ -299,12 +302,14 @@ void publish(String topic, String payload) {
 // UWB TWR 프레임 전송 — 수정 포인트 3종 적용
 // ============================================================
 
-// [fix-1][fix-2][fix-3] POLL_ACK 전송
+// POLL_ACK 전송
+// 폴링 방식이므로 setTransmitData 전에 forceTRxOff() 필수
+// (인터럽트 방식 예제와 달리 폴링 방식에서의 RX→TX 전환 안정화)
 void sendPollAckFrame() {
     memset(rangeFrame, 0, sizeof(rangeFrame));
     rangeFrame[0] = UWB_POLL_ACK;
 
-    DW1000Ng::forceTRxOff();                                 // [fix-2] RX→off 명시적 전환
+    DW1000Ng::forceTRxOff();                                 // RX→TX 전환 안정화
     DW1000Ng::setTransmitData(rangeFrame, UWB_RANGE_FRAME_LEN);
     DW1000Ng::startTransmit(TransmitMode::IMMEDIATE);
 
@@ -318,8 +323,8 @@ void sendPollAckFrame() {
             return;
         }
     }
+    timePollAckSent = DW1000Ng::getTransmitTimestamp();     // clearTransmitStatus() 전에 취득
     DW1000Ng::clearTransmitStatus();
-    timePollAckSent = DW1000Ng::getTransmitTimestamp();
     DW1000Ng::startReceive();                                // [fix-3] 반이중 수신 복귀
 }
 
@@ -395,10 +400,10 @@ void sendAck(uint16_t msgId) {
         }
     }
     DW1000Ng::clearTransmitStatus();
-    // startReceive()는 processMessages() 말미에서 호출
+    DW1000Ng::startReceive();  // ACK TX 완료 후 RX 복귀
 }
 
-// [fix-2] MODE_NOTIFY 전송 (motor.ino 에 이미 millis 타임아웃 있었음, forceTRxOff 추가)
+// [fix-2] MODE_NOTIFY 전송
 void sendModeNotifyFrame(uint8_t mode) {
     byte notifyFrame[UWB_RANGE_FRAME_LEN] = {0};
     notifyFrame[0] = (byte)UWB_MODE_NOTIFY;
@@ -424,7 +429,8 @@ void sendModeNotifyFrame(uint8_t mode) {
 // ============================================================
 // UWB 수신 처리 (motor.ino processMessages 구조 동일)
 // ============================================================
-bool handleRangingFrame(uint8_t* data, int len) {
+// rxTimestamp: processMessages에서 clearReceiveStatus 전에 이미 취득한 값
+bool handleRangingFrame(uint8_t* data, int len, uint64_t rxTimestamp) {
     if (len != UWB_RANGE_FRAME_LEN) return false;
 
     byte msgId = data[0];
@@ -432,15 +438,17 @@ bool handleRangingFrame(uint8_t* data, int len) {
 
     if (msgId == UWB_POLL) {
         rangingProtocolFailed = false;
-        timePollReceived = DW1000Ng::getReceiveTimestamp();
+        timePollReceived = rxTimestamp;   // 이미 clearReceiveStatus 전에 취득된 값
         Serial.println("[UWB] POLL 수신 → POLL_ACK 전송 중...");
         sendPollAckFrame();
         Serial.println("[UWB] POLL_ACK 전송 완료 → RANGE 대기");
+        waitingForRange = true;
         return true;
     }
 
     // UWB_RANGE
-    uint64_t timeRangeReceived = DW1000Ng::getReceiveTimestamp();
+    uint64_t timeRangeReceived = rxTimestamp;  // 이미 clearReceiveStatus 전에 취득된 값
+    waitingForRange = false;
     Serial.println("[UWB] RANGE 수신 → 거리 계산 중...");
     if (!rangingProtocolFailed) {
         uint64_t timePollSent        = DW1000NgUtils::bytesAsValue(data + 1,  LENGTH_TIMESTAMP);
@@ -546,13 +554,18 @@ void handlePublish(uint16_t msgId, uint8_t qos, String topic, uint8_t* payload, 
 }
 
 void processMessages() {
+    
     if (!DW1000Ng::isReceiveDone()) return;
 
     int dataLen = DW1000Ng::getReceivedDataLength();
     numReceived++;
 
-    if (dataLen > (int)sizeof(recvBuffer) || dataLen < 5) {
-        Serial.println("[Error] Invalid packet size");
+    // ── 진단: 수신된 모든 프레임 덤프 ──────────────────────────
+    Serial.printf("[RX#%d] len=%d  data: ", numReceived, dataLen);
+    // 내용은 아래서 읽은 후 출력하므로 일단 len만
+
+    if (dataLen > (int)sizeof(recvBuffer) || dataLen < 1) {
+        Serial.printf("← INVALID SIZE\n");
         DW1000Ng::clearReceiveStatus();
         DW1000Ng::startReceive();
         return;
@@ -561,7 +574,20 @@ void processMessages() {
     byte tempBuffer[dataLen];
     DW1000Ng::getReceivedData(tempBuffer, dataLen);
 
-    bool handledAsRanging = handleRangingFrame(tempBuffer, dataLen);
+    // ★★★ 핵심 순서 ★★★
+    // (1) getReceiveTimestamp() → RX_TIME 레지스터 읽기 (SYS_STATUS와 별개)
+    // (2) clearReceiveStatus()  → SYS_STATUS의 RX 완료 비트 클리어
+    //     이 순서를 지키면 다음 processMessages() 호출에서 isReceiveDone()=false 보장
+    // (3) 이후 TX 함수들 내부에서 startReceive() 호출
+    uint64_t rxTimestamp = DW1000Ng::getReceiveTimestamp();  // (1)
+    DW1000Ng::clearReceiveStatus();                          // (2)
+
+    // 덤프 출력
+    for (int i = 0; i < dataLen && i < 16; i++) Serial.printf("%02X ", tempBuffer[i]);
+    if (dataLen > 16) Serial.print("...");
+    Serial.println();
+
+    bool handledAsRanging = handleRangingFrame(tempBuffer, dataLen, rxTimestamp);
 
     if (!handledAsRanging) {
         if (tempBuffer[0] == START_BYTE && tempBuffer[dataLen - 1] == END_BYTE) {
@@ -570,13 +596,11 @@ void processMessages() {
             else
                 Serial.println("[UWB] Parsing Failed (CRC Error or Logic).");
         }
+        // MQTT 경로: TX 함수 호출 없으므로 여기서 startReceive
+        DW1000Ng::startReceive();
     }
-
-    // 수신 처리 완료 후 다시 수신 모드로
-    // (ranging 프레임은 sendPollAckFrame 등에서 이미 startReceive 호출,
-    //  MQTT 프레임은 여기서 처리)
-    DW1000Ng::clearReceiveStatus();
-    DW1000Ng::startReceive();
+    // Ranging 경로: sendPollAckFrame / sendRangeReportFrame / sendRangeFailedFrame
+    // 내부에서 이미 startReceive() 호출됨
 }
 
 // ============================================================
@@ -632,6 +656,15 @@ void setup() {
 
 // CLAUDE.md §4.3 loop() 구조
 void loop() {
+    // 진단: loop() 생존 확인 + isReceiveDone 상태 (1초 주기)
+    static unsigned long lastAlivePrint = 0;
+    if (millis() - lastAlivePrint >= 1000) {
+        lastAlivePrint = millis();
+        Serial.printf("[ALIVE] t=%lu  rxDone=%d  numReceived=%d  waitRange=%d\n",
+                      millis(), DW1000Ng::isReceiveDone() ? 1 : 0, numReceived,
+                      waitingForRange ? 1 : 0);
+    }
+
     server.handleClient();       // HTTP 클라이언트 처리
 
     processMessages();           // UWB 수신 처리
@@ -643,4 +676,5 @@ void loop() {
     }
 
     updateMotorSpeed(currentDirection);  // 모터 가감속
+    // (waitingForRange 중 강제 RX 재초기화 제거 — RANGE 도달 타이밍 방해됨)
 }

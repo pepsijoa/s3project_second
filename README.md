@@ -331,6 +331,204 @@ make -j$(nproc)
 
 ---
 
+## DWM1000 UWB TWR 구현 가이드 (폴링 방식)
+
+> 이 섹션은 DW1000Ng 라이브러리를 **폴링 모드(`initializeNoInterrupt`)** 로 사용하면서  
+> TWR(Two-Way Ranging)을 안정적으로 구현하는 과정에서 파악한 정확한 동작 원리를 정리한다.  
+> 인터럽트 방식(`initialize()`) 예제와는 구조가 근본적으로 다르므로 주의할 것.
+
+### 1. 폴링 방식 vs 인터럽트 방식 차이
+
+| 항목 | 인터럽트 방식 (`initialize`) | 폴링 방식 (`initializeNoInterrupt`) |
+|------|----------------------------|------------------------------------|
+| 상태 감지 | `sentAck` / `receivedAck` 콜백 플래그 | `isReceiveDone()` / `isTransmitDone()` loop() 내 직접 조회 |
+| RX→TX 전환 | 내부 ISR이 자동 처리 | **`forceTRxOff()` 수동 호출 필수** |
+| 대표 예제 | `DWM_EXAMPLE/TwoWayRangingInitiator.ino` | `ESP32/node_car/node_car.ino` |
+
+**핵심**: 폴링 방식에서 RX 수신 후 TX로 전환할 때 `forceTRxOff()`를 호출하지 않으면  
+`setTransmitData()` / `startTransmit()` 이후에도 TX가 실제로 실행되지 않는다.
+
+---
+
+### 2. DW1000Ng 라이브러리 레지스터 동작 (소스 분석 결과)
+
+| 함수 | 대상 레지스터 | 동작 설명 |
+|------|:------------:|-----------|
+| `isReceiveDone()` | SYS_STATUS (0x0F) | 매 호출마다 SPI READ → `_sysstatus` 캐시 갱신 → RXFCG && RXDFR 비트 확인 |
+| `getReceivedData()` | RX_BUFFER | SYS_STATUS 무관 — 버퍼 직접 읽기 |
+| `getReceiveTimestamp()` | **RX_TIME (0x15)** | **SYS_STATUS와 완전히 독립된 레지스터** — clearReceiveStatus() 이후에도 유효 |
+| `clearReceiveStatus()` | SYS_STATUS (0x0F) | RX 완료 비트(RXDFR, RXFCG 등) write-1-to-clear — **RX_TIME 건드리지 않음** |
+| `getTransmitTimestamp()` | TX_TIME | SYS_STATUS 무관 — TX 완료 타임스탬프 읽기 |
+| `clearTransmitStatus()` | SYS_STATUS (0x0F) | TX 완료 비트만 클리어 |
+| `forceTRxOff()` | SYS_CTRL | **SYS_STATUS 건드리지 않음** — 송수신 강제 종료만 |
+| `startReceive()` | SYS_CTRL | **SYS_STATUS 건드리지 않음** — RX 모드 진입만 |
+| `startTransmit()` | SYS_CTRL | **SYS_STATUS 건드리지 않음** — TX 시작만 |
+
+> **중요**: `getReceiveTimestamp()`와 `clearReceiveStatus()`는 서로 다른 레지스터를 건드리므로  
+> 순서는 기술적으로 독립적이다. 그러나 `clearReceiveStatus()`를 TX 함수들보다 **먼저** 호출해야  
+> TX 폴링 루프(`isTransmitDone()`) 중 `_sysstatus` 캐시가 오염되어 RX 완료 비트가 남아있는 문제를 방지한다.
+
+---
+
+### 3. processMessages() 올바른 구현 순서
+
+```cpp
+void processMessages() {
+    if (!DW1000Ng::isReceiveDone()) return;   // (A) SPI READ: SYS_STATUS 확인
+
+    int dataLen = DW1000Ng::getReceivedDataLength();
+    DW1000Ng::getReceivedData(tempBuffer, dataLen);    // RX_BUFFER 읽기
+
+    // (B) RX_TIME(0x15) 읽기 — SYS_STATUS와 독립된 레지스터이므로 순서 자유
+    uint64_t rxTimestamp = DW1000Ng::getReceiveTimestamp();
+
+    // (C) SYS_STATUS RX 비트 클리어 — TX 폴링 시작 전에 반드시 완료
+    //     이 이후 isReceiveDone()은 false를 반환하므로 동일 프레임 이중 처리 방지
+    DW1000Ng::clearReceiveStatus();
+
+    // (D) 프레임 처리 (타임스탬프는 파라미터로 전달)
+    bool handled = handleRangingFrame(tempBuffer, dataLen, rxTimestamp);
+    if (!handled) {
+        // MQTT/토픽 처리 로직
+        DW1000Ng::startReceive();  // TX 없이 종료 시 RX 복귀 필수
+    }
+    // Ranging 경로: TX 함수(sendPollAckFrame 등) 내부에서 startReceive() 호출됨
+}
+```
+
+**주의**: `handleRangingFrame()` 내부에서 `getReceiveTimestamp()`를 재호출하지 말 것.  
+타임스탬프는 반드시 `processMessages()`에서 취득 후 파라미터로 전달해야 한다.
+
+---
+
+### 4. TX 완료 후 RX 복귀 패턴 (필수)
+
+모든 TX 함수(`sendPollAckFrame`, `sendRangeReportFrame`, `publish`, `sendAck` 등)는  
+마지막에 반드시 `startReceive()`를 호출해야 한다. DWM1000은 **반이중** 장치이므로  
+TX 완료 후 명시적으로 RX 모드로 전환하지 않으면 다음 프레임을 수신할 수 없다.
+
+```cpp
+void sendPollAckFrame() {
+    DW1000Ng::forceTRxOff();          // (1) RX→TX 전환: 폴링 방식 필수
+    DW1000Ng::setTransmitData(...);
+    DW1000Ng::startTransmit(TransmitMode::IMMEDIATE);
+    // TX 완료 폴링
+    uint32_t txStart = millis();
+    while (!DW1000Ng::isTransmitDone()) {
+        if (millis() - txStart > 100) break;
+    }
+    DW1000Ng::clearTransmitStatus();
+    timePollAckSent = DW1000Ng::getTransmitTimestamp(); // TX_TIME 레지스터
+    DW1000Ng::startReceive();         // (2) TX 완료 후 즉시 RX 복귀
+}
+```
+
+---
+
+### 5. DELAYED TX 구현 (이니시에이터 측 RANGE 프레임)
+
+POLL_ACK 수신 후 RANGE 프레임을 즉시 전송하면 리스폰더가 아직 RX 모드로 전환되기 전이라  
+RANGE 프레임을 놓칠 수 있다. `DELAYED TX` + 3000µs 지연으로 해결한다.
+
+```cpp
+void send_range() {
+    DW1000Ng::forceTRxOff();   // (1) 반드시 setDelayedTRX 이전에 호출
+
+    uint64_t timeRangeSent = DW1000Ng::getSystemTimestamp();
+    timeRangeSent += DW1000NgTime::microsecondsToUWBTime(3000); // 3ms 뒤 예약
+
+    byte futureTimeBytes[LENGTH_TIMESTAMP];
+    DW1000NgUtils::writeValueToBytes(futureTimeBytes, timeRangeSent, LENGTH_TIMESTAMP);
+    DW1000Ng::setDelayedTRX(futureTimeBytes);  // (2) forceTRxOff 이후에 유효
+
+    // 실제 TX 시각 = 예약 시각 + 안테나 딜레이
+    timeRangeSent += DW1000Ng::getTxAntennaDelay();
+
+    // ★ 이 구간에서 Serial.println 절대 금지
+    //   (µs 단위 지연 발생 시 예약 시각 초과 → 즉시 TX 불가)
+    buildRangeFrame(uwbFrame);  // 프레임 구성 (빠른 메모리 연산만)
+
+    DW1000Ng::setTransmitData(uwbFrame, UWB_FRAME_LEN);
+    DW1000Ng::startTransmit(TransmitMode::DELAYED);  // (3) 예약 시각에 TX
+}
+```
+
+**핵심**: `setDelayedTRX()` 이후 `startTransmit(DELAYED)` 호출 사이에 `Serial.println` 등  
+µs 단위 지연이 발생하는 코드를 넣으면 예약 시각을 초과해 TX가 실패한다.
+
+---
+
+### 6. TWR 프레임 시퀀스 (4-메시지 Two-Way Ranging)
+
+```
+이니시에이터 (Node)                      리스폰더 (Car)
+─────────────────────────────────────────────────────────
+   POLL 전송 (timePollSent)
+                         ────────────────>
+                                          timePollReceived = rxTimestamp
+                                          sendPollAckFrame()
+                                          timePollAckSent = TX_TIME
+                         <────────────────
+   timePollAckReceived = rxTimestamp
+   clearReceiveStatus()
+   10ms 대기 (PENDING_RANGE_SEND)
+   send_range() with DELAYED TX 3000µs
+   (timeRangeSent 예약)
+                         ────────────────>
+                                          timeRangeReceived = rxTimestamp
+                                          computeRangeAsymmetric(
+                                            timePollSent, timePollReceived,
+                                            timePollAckSent, timePollAckReceived,
+                                            timeRangeSent, timeRangeReceived)
+                                          sendRangeReportFrame(distance_cm)
+                         <────────────────
+   거리값(cm) 수신 출력
+```
+
+**6개 타임스탬프 취득 위치**:
+
+| 타임스탬프 | 취득 노드 | 취득 시점 |
+|-----------|---------|---------|
+| `timePollSent` | 이니시에이터 | POLL TX 완료 후 `getTransmitTimestamp()` |
+| `timePollReceived` | 리스폰더 | POLL 수신 후 `rxTimestamp` 파라미터 |
+| `timePollAckSent` | 리스폰더 | POLL_ACK TX 완료 후 `getTransmitTimestamp()` |
+| `timePollAckReceived` | 이니시에이터 | POLL_ACK 수신 후 `rxTimestamp` 파라미터 |
+| `timeRangeSent` | 이니시에이터 | RANGE DELAYED TX 예약 시각 + 안테나 딜레이 |
+| `timeRangeReceived` | 리스폰더 | RANGE 수신 후 `rxTimestamp` 파라미터 |
+
+---
+
+### 7. 버그 이력 및 해결책
+
+#### 버그 1: RANGE 프레임이 리스폰더에 전혀 도달하지 않음
+- **원인**: POLL_ACK 수신 직후 IMMEDIATE TX로 RANGE 전송 → 리스폰더가 아직 TX 중이거나  
+  RX 모드로 복귀하기 전이라 프레임 손실
+- **해결**: `TransmitMode::DELAYED` + 3000µs 지연 적용 (`setDelayedTRX` + `startTransmit(DELAYED)`)
+
+#### 버그 2: sendPollAckFrame() TX가 실행되지 않음 (폴링 방식)
+- **원인**: 인터럽트 방식 예제와 달리 폴링 방식에서는 RX 상태에서 TX 전환 시  
+  `forceTRxOff()` 수동 호출 없이는 `startTransmit()` 무시됨
+- **해결**: `sendPollAckFrame()` 첫 줄에 `DW1000Ng::forceTRxOff()` 추가
+
+#### 버그 3: 동일한 POLL 프레임이 반복 처리됨 (이중 처리)
+- **원인**: `handleRangingFrame()` 내부에서 `sendPollAckFrame()` 호출 →  
+  TX 완료 폴링(`isTransmitDone()`) 중 `SYS_STATUS` 캐시가 갱신 →  
+  이전 RX 완료 비트가 아직 남아 `isReceiveDone()` 재발화
+- **해결**: `processMessages()`에서 `clearReceiveStatus()`를 TX 호출보다 **먼저** 실행
+
+#### 버그 4: `RANGE_FAILED` — 거리 계산 결과가 범위를 벗어남 (0 이하 또는 100m 초과)
+- **원인**: `getReceiveTimestamp()`를 `forceTRxOff()` 또는 `sendPollAckFrame()` 이후에 호출 →  
+  `handleRangingFrame()` 내부에서 타임스탬프 취득 시점이 TX 시작 이후 → 값 오염 가능성
+- **해결**: `processMessages()`에서 미리 `rxTimestamp = getReceiveTimestamp()` 취득 후  
+  `handleRangingFrame(data, len, rxTimestamp)` 파라미터로 전달
+
+#### 버그 5: 300ms 주기 강제 RX 재초기화가 RANGE 수신을 방해
+- **원인**: `millis()` 기반 300ms 타이머로 `forceTRxOff()` + `startReceive()` 강제 실행 →  
+  RANGE 프레임 도달 타이밍에 RX가 재초기화되어 프레임 드롭
+- **해결**: 해당 타이머 로직 완전 제거. TX 완료 후 `startReceive()` 패턴만으로 충분
+
+---
+
 ## 트러블슈팅
 
 | 증상 | 원인 | 해결 |
