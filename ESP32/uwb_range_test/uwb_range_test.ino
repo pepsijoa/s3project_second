@@ -56,6 +56,11 @@ static uint32_t   retryAt             = 0;      // 재시도 시각
 static int        retryCount          = 0;      // 현재 시도 횟수
 const  int        MAX_RETRY           = 1;      // 최대 자동 재시도 횟수
 
+// ── 주기적 ranging ───────────────────────────────────────────
+#define RANGE_INTERVAL_MS  1000          // 자동 측정 주기 (ms)
+static bool     autoRanging   = false;   // 'range' 명령으로 토글
+static uint32_t lastRangeAt   = 0;
+
 // ── 이동 평균 필터 (창 크기 3) ────────────────────────────────
 // 극단값 완화: UWB 인도어 멀티패스/노이즈로 인한 단발성 이상값 억제
 #define RANGE_FILTER_SIZE  3
@@ -143,9 +148,9 @@ static void fail_ranging(const char *reason) {
         retryCount++;
         pendingRetry = true;
         retryAt = millis() + 500;
-        Serial.printf("[UWB] 500ms 후 자동 재시도 %d/%d\n", retryCount, MAX_RETRY);
+        // Serial.printf("[UWB] 500ms 후 자동 재시도 %d/%d\n", retryCount, MAX_RETRY);
     } else {
-        Serial.printf("[UWB] 최대 재시도(%d) 초과 — 'range' 입력으로 수동 재시작\n", MAX_RETRY);
+        // Serial.printf("[UWB] 최대 재시도(%d) 초과 — 'range' 입력으로 수동 재시작\n", MAX_RETRY);
         retryCount = 0;
     }
 }
@@ -232,8 +237,8 @@ static void process_uwb() {
         rangeState  = RangeState::PENDING_RANGE_SEND;
         rangeSendAt = millis() + RANGE_SEND_DELAY_MS;
         deadlineMs  = rangeSendAt + RANGE_TIMEOUT_MS;
-        Serial.printf("[UWB] POLL_ACK 수신 → %dms 후 RANGE 전송 예약  (rxCount=%lu)\n",
-                      RANGE_SEND_DELAY_MS, rxFrameCount);
+        // Serial.printf("[UWB] POLL_ACK 수신 → %dms 후 RANGE 전송 예약  (rxCount=%lu)\n",
+        //               RANGE_SEND_DELAY_MS, rxFrameCount);
         return;
     }
 
@@ -305,9 +310,14 @@ void loop() {
         cmd.toLowerCase();
 
         if (cmd == "range") {
-            retryCount = 0;  // 수동 시작 시 재시도 카운터 초기화
+            autoRanging = true;
+            retryCount  = 0;
             pendingRetry = false;
-            start_ranging();
+            lastRangeAt  = 0;  // 즉시 첫 측정 시작
+            Serial.println("[INFO] 자동 측정 시작 (stop 으로 중지)");
+        } else if (cmd == "stop") {
+            autoRanging = false;
+            Serial.println("[INFO] 자동 측정 중지");
         } else if (cmd == "debug") {
             debugMode = !debugMode;
             Serial.printf("[INFO] debug 모드 %s\n", debugMode ? "ON" : "OFF");
